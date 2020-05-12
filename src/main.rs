@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use rand::Rng;
+use std::f64::consts::PI;
 
 #[derive(Debug)]
 struct Body {
@@ -36,9 +37,23 @@ impl Body {
     }
 }
 
+fn gen_random_body(rng: &mut rand::rngs::ThreadRng, radius: f64) -> Body {
+    let a: f64 = rng.gen::<f64>() * 2.0 * PI;
+    let r: f64 = rng.gen::<f64>().sqrt() * radius;
+    let x: f64 = a.cos() * r;
+    let y: f64 = a.sin() * r;
+    let perp_ratio: f64 = - y / x;
+    let vx: f64 = if rng.gen_bool(0.5) {a * 4E4} else {-a * 4E4};
+    let vy: f64 = perp_ratio * vx;
+    let mass: f64 = (rng.gen::<f64>() + 1.0) * 1.989E30;
+    Body{x, y, vx, vy, fx: 0.0, fy: 0.0, mass}
+}
+
+fn initialize(n: u32) -> Vec<Body> {
+    let mut rng = rand::thread_rng();
+    (0..n).map(|_| gen_random_body(&mut rng, 5E20)).collect::<Vec<Body>>()
+}
+
 fn main() {
-    let mut constants = HashMap::new();
-    constants.insert(String::from("G"), 6.67408e-11); // gravitational constant
-    constants.insert(String::from("eps"), 6E+4); // softening parameter
-    println!("Hello, world!");
+    let bodies = initialize(100);
 }
