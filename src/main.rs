@@ -1,5 +1,6 @@
 use rand::Rng;
 use std::f64::consts::PI;
+use std::cmp::{min, max};
 
 #[derive(Debug)]
 struct Body {
@@ -20,25 +21,29 @@ impl Body {
         self.y += dt * self.vy;
     }
 
-    fn calcForce(&mut self, other: Body) {
-        let dx: f64 = self.x - other.x;
-        let dy: f64 = self.y - other.y;
-        let dist: f64 = (dx * dx + dy * dy).sqrt();
-        let force: f64 = 6.67408E-11 * self.mass * other.mass / ((dist + 6E+4) * (dist + 6E+4));
-        self.fx += force * dx / dist;
-        self.fy += force * dy / dist;
-        // commenting this out for now. will double the calculations but im struggling with the
-        // borrow checker. 
-        //other.fx += force * dx / dist;
-        //other.fy += force * dy / dist;
-        
-    }
-
     fn reset(&mut self) {
         self.fx = 0.0;
         self.fy = 0.0;
     }
 }
+
+fn calcForce(mut B: &mut Vec<Body>, b1_idx: usize, b2_idx: usize) -> &mut Vec<Body> {
+    let b1 = &B.split_at_mut(min(b1_idx, b2_idx)).1.first_mut().unwrap();
+    let b2 = &B.split_at_mut(max(b1_idx, b2_idx)).1.first_mut().unwrap();
+
+    let dx: f64 = b1.x - b2.x;
+    let dy: f64 = b1.y - b2.y;
+    let dist: f64 = (dx * dx + dy * dy).sqrt();
+    let force: f64 = 6.67408E-11 * b1.mass * b2.mass / ((dist + 6E+4) * (dist + 6E+4));
+    // (force * dx / dist, force * dy / dist)
+    b1.fx += force * dx / dist;
+    b1.fy += force * dy / dist;
+    b2.fx += force * dx / dist;
+    b2.fy += force * dy / dist;
+
+    B
+}
+
 
 fn gen_random_body(rng: &mut rand::rngs::ThreadRng, radius: f64) -> Body {
     let a: f64 = rng.gen::<f64>() * 2.0 * PI;
@@ -57,15 +62,13 @@ fn initialize(n: u32) -> Vec<Body> {
     (0..n).map(|_| gen_random_body(&mut rng, 5E20)).collect::<Vec<Body>>()
 }
 
-fn integrate(n: u32, bodies: Vec<Body>) -> Vec<Body> {
-    
-    
-    bodies
+fn integrate(n: u32, mut bodies: &mut Vec<Body>) -> Vec<Body> {
+     *calcForce(&mut bodies, 0, 1)
 }
 
 fn main() {
     let mut bodies = initialize(100);
-    bodies[0].calcForce(bodies[1]);
+    bodies = integrate(10, &mut bodies);
     println!("{:?}", bodies[0]);
     // for _ in 0..1000 {
 
