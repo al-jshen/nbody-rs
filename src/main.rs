@@ -20,15 +20,18 @@ impl Body {
         self.y += dt * self.vy;
     }
 
-    fn calcForce(&mut self, other: &mut Body) {
+    fn calcForce(&mut self, other: Body) {
         let dx: f64 = self.x - other.x;
         let dy: f64 = self.y - other.y;
         let dist: f64 = (dx * dx + dy * dy).sqrt();
         let force: f64 = 6.67408E-11 * self.mass * other.mass / ((dist + 6E+4) * (dist + 6E+4));
         self.fx += force * dx / dist;
         self.fy += force * dy / dist;
-        other.fx += force * dx / dist;
-        other.fy += force * dy / dist;
+        // commenting this out for now. will double the calculations but im struggling with the
+        // borrow checker. 
+        //other.fx += force * dx / dist;
+        //other.fy += force * dy / dist;
+        
     }
 
     fn reset(&mut self) {
@@ -54,6 +57,28 @@ fn initialize(n: u32) -> Vec<Body> {
     (0..n).map(|_| gen_random_body(&mut rng, 5E20)).collect::<Vec<Body>>()
 }
 
-fn main() {
-    let bodies = initialize(100);
+fn integrate(n: u32, bodies: Vec<Body>) -> Vec<Body> {
+    
+    
+    bodies
 }
+
+fn main() {
+    let mut bodies = initialize(100);
+    bodies[0].calcForce(bodies[1]);
+    println!("{:?}", bodies[0]);
+    // for _ in 0..1000 {
+
+    //     for  in &bodies {
+    //         for j in &bodies {
+    //             *i.calcForce(&j);
+    //         }
+    //     }
+    //     
+    //     bodies.iter_mut().map(|b| {
+    //         b.update(1E10);
+    //         b.reset();
+    //     });
+    // }
+}
+
