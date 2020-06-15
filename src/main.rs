@@ -57,27 +57,32 @@ fn initialize(n: u32) -> Vec<RefCell<Body>> {
 }
 
 fn integrate(n: u32, bodies: &Vec<RefCell<Body>>) {
-    for i in 0..n {
-        for j in i+1..n {
-            let mut b1 = bodies[i as usize].borrow_mut();
-            let mut b2 = bodies[j as usize].borrow_mut();
-            b1.calc_force(&mut b2);
+    for _ in 0..n {
+        for i in 0..bodies.len() {
+            for j in i+1..bodies.len() {
+                let mut b1 = bodies[i as usize].borrow_mut();
+                let mut b2 = bodies[j as usize].borrow_mut();
+                b1.calc_force(&mut b2);
+            }
         }
+
+        for k in 0..bodies.len() {
+            let mut body = bodies[k as usize].borrow_mut();
+            body.update(1E9);
+            body.reset();
+        }
+        
+        println!("({}, {}),\\", bodies[0].borrow().x, bodies[0].borrow().y);
     }
 
 
-    for k in 0..n {
-        let mut body = bodies[k as usize].borrow_mut();
-        body.update(1E9);
-        body.reset();
-    }
     
 }
 
 fn main() {
     let bodies = initialize(100);
     println!("{:?}", &bodies[0]);
-    integrate(10, &bodies);
+    integrate(100, &bodies);
     println!("{:?}", &bodies[0]);
 }
 
