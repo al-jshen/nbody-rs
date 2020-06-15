@@ -1,6 +1,6 @@
 use rand::Rng;
 use std::f64::consts::PI;
-use std::cmp::{min, max};
+use std::cell::RefCell;
 
 #[derive(Debug)]
 struct Body {
@@ -25,23 +25,17 @@ impl Body {
         self.fx = 0.0;
         self.fy = 0.0;
     }
-}
 
-fn calcForce(mut B: &mut Vec<Body>, b1_idx: usize, b2_idx: usize) -> &mut Vec<Body> {
-    let b1 = &B.split_at_mut(min(b1_idx, b2_idx)).1.first_mut().unwrap();
-    let b2 = &B.split_at_mut(max(b1_idx, b2_idx)).1.first_mut().unwrap();
-
-    let dx: f64 = b1.x - b2.x;
-    let dy: f64 = b1.y - b2.y;
-    let dist: f64 = (dx * dx + dy * dy).sqrt();
-    let force: f64 = 6.67408E-11 * b1.mass * b2.mass / ((dist + 6E+4) * (dist + 6E+4));
-    // (force * dx / dist, force * dy / dist)
-    b1.fx += force * dx / dist;
-    b1.fy += force * dy / dist;
-    b2.fx += force * dx / dist;
-    b2.fy += force * dy / dist;
-
-    B
+    fn calc_force(&mut self, other: &mut Body) {
+        let dx: f64 = self.x - other.x;
+        let dy: f64 = self.y - other.y;
+        let dist: f64 = (dx * dx + dx * dx).sqrt();
+        let force: f64 = 6.67408E-11 * self.mass * other.mass / ((dist + 6E+3) * (dist + 6E+3));
+        self.fx += force * dx / dist;
+        self.fy += force * dy / dist;
+        other.fx += force * dx / dist;
+        other.fy += force * dy / dist;
+    }
 }
 
 
@@ -57,31 +51,33 @@ fn gen_random_body(rng: &mut rand::rngs::ThreadRng, radius: f64) -> Body {
     Body{x, y, vx, vy, fx: 0.0, fy: 0.0, mass}
 }
 
-fn initialize(n: u32) -> Vec<Body> {
+fn initialize(n: u32) -> Vec<RefCell<Body>> {
     let mut rng = rand::thread_rng();
-    (0..n).map(|_| gen_random_body(&mut rng, 5E20)).collect::<Vec<Body>>()
+    (0..n).map(|_| RefCell::new(gen_random_body(&mut rng, 5E20))).collect::<Vec<RefCell<Body>>>()
 }
 
-fn integrate(n: u32, mut bodies: &mut Vec<Body>) -> Vec<Body> {
-     *calcForce(&mut bodies, 0, 1)
+fn integrate(n: u32, bodies: &Vec<RefCell<Body>>) {
+    for i in 0..n {
+        for j in i+1..n {
+            let mut b1 = bodies[i as usize].borrow_mut();
+            let mut b2 = bodies[j as usize].borrow_mut();
+            b1.calc_force(&mut b2);
+        }
+    }
+
+
+    for k in 0..n {
+        let mut body = bodies[k as usize].borrow_mut();
+        body.update(1E9);
+        body.reset();
+    }
+    
 }
 
 fn main() {
-    let mut bodies = initialize(100);
-    bodies = integrate(10, &mut bodies);
-    println!("{:?}", bodies[0]);
-    // for _ in 0..1000 {
-
-    //     for  in &bodies {
-    //         for j in &bodies {
-    //             *i.calcForce(&j);
-    //         }
-    //     }
-    //     
-    //     bodies.iter_mut().map(|b| {
-    //         b.update(1E10);
-    //         b.reset();
-    //     });
-    // }
+    let bodies = initialize(100);
+    println!("{:?}", &bodies[0]);
+    integrate(10, &bodies);
+    println!("{:?}", &bodies[0]);
 }
 
